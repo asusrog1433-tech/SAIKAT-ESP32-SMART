@@ -1,148 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>ESP32 Smart Control</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<title>ESP32 Smart Home</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
 <style>
-* { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-
-body {
-  margin: 0;
-  background: linear-gradient(135deg,#1d2671,#c33764);
-  color: white;
-  text-align: center;
+*{box-sizing:border-box;font-family:Poppins}
+body{
+  margin:0;
+  background:#050816;
+  color:#fff;
+  overflow-x:hidden;
 }
 
-h1 { margin-top: 25px; font-weight: 600; }
+canvas{position:fixed;top:0;left:0;z-index:-1}
 
-.glass {
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(12px);
-  border-radius: 20px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+.glass{
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(14px);
+  border-radius:18px;
+  box-shadow:0 10px 40px rgba(0,0,0,.4);
 }
 
-#loginForm {
-  max-width: 380px;
-  margin: 80px auto;
-  padding: 30px;
+h1{text-align:center;margin-top:30px}
+
+#loginForm{
+  max-width:380px;
+  margin:120px auto;
+  padding:30px;
 }
 
-input {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 12px;
-  border: none;
-  outline: none;
-}
-
-button {
-  padding: 12px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  transition: 0.3s;
-}
-
-button:hover { transform: scale(1.05); }
-
-#loginBtn { width:100%; background:#00c6ff; color:white; }
-
-#dashboard { display:none; }
-
-select {
-  padding: 10px;
-  border-radius: 12px;
+input,select,button{
+  width:100%;
+  padding:12px;
+  margin:10px 0;
+  border-radius:12px;
   border:none;
-  margin: 20px 0;
+  outline:none;
 }
 
-.relay-container {
+button{
+  background:#3f51b5;
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  transition:.3s;
+}
+button:hover{transform:scale(1.05)}
+
+#dashboard{display:none;padding:20px}
+
+.top-bar{
   display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:15px;
+  margin-bottom:20px;
+}
+
+.status{
+  padding:8px 16px;
+  border-radius:30px;
+  font-weight:600;
+}
+.online{background:#00e676;color:black}
+.offline{background:#ff5252}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+}
+
+.card{
+  padding:18px;
+  text-align:center;
+}
+
+.badge{
+  display:inline-block;
+  padding:6px 14px;
+  border-radius:20px;
+  font-weight:600;
+  margin-top:8px;
+}
+.on{background:#00e676;color:black}
+.off{background:#ff5252}
+
+.actions{
+  margin-top:25px;
+  display:flex;
+  gap:15px;
   flex-wrap:wrap;
   justify-content:center;
 }
 
-.relay-card {
-  width:220px;
-  padding:20px;
-  margin:15px;
-}
+.red{background:#ff1744}
+.gray{background:#607d8b}
 
-.status-badge {
-  padding:6px 12px;
-  border-radius:50px;
-  font-weight:600;
-  font-size:14px;
-}
-
-.on { background:#00e676; color:black; }
-.off { background:#ff5252; }
-
-.control-btn {
-  margin-top:12px;
-  width:100%;
-  background:#2196f3;
-  color:white;
-}
-
-#allOffBtn { background:#ff1744; margin:20px; }
-#logoutBtn { background:#607d8b; margin:20px; }
-
-@media(max-width:600px){
-  .relay-card{ width:90%; }
+.sensor{
+  font-size:20px;
+  margin-top:10px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>⚡ ESP32 Smart Dashboard</h1>
+<canvas id="bg"></canvas>
+
+<h1>⚡ ESP32 Smart Control</h1>
 
 <div id="loginForm" class="glass">
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
   <button id="loginBtn">Login</button>
 </div>
 
 <div id="dashboard">
-  <select id="deviceSelect"></select>
+  <div class="top-bar">
+    <select id="deviceSelect"></select>
+    <span id="onlineStatus" class="status offline">Offline</span>
+  </div>
 
-  <div class="relay-container">
-    <div class="relay-card glass">
-      <h3>Relay 1</h3>
-      <span id="status1" class="status-badge off">OFF</span>
-      <button id="btn1" class="control-btn">Toggle</button>
+  <div id="relayGrid" class="grid"></div>
+
+  <div class="grid">
+    <div class="card glass">
+      <h3>🌡 Temperature</h3>
+      <div id="temp" class="sensor">-- °C</div>
     </div>
-
-    <div class="relay-card glass">
-      <h3>Relay 2</h3>
-      <span id="status2" class="status-badge off">OFF</span>
-      <button id="btn2" class="control-btn">Toggle</button>
+    <div class="card glass">
+      <h3>💧 Humidity</h3>
+      <div id="hum" class="sensor">-- %</div>
     </div>
-
-    <div class="relay-card glass">
-      <h3>Relay 3</h3>
-      <span id="status3" class="status-badge off">OFF</span>
-      <button id="btn3" class="control-btn">Toggle</button>
-    </div>
-
-    <div class="relay-card glass">
-      <h3>Relay 4</h3>
-      <span id="status4" class="status-badge off">OFF</span>
-      <button id="btn4" class="control-btn">Toggle</button>
+    <div class="card glass">
+      <h3>🔥 Gas</h3>
+      <div id="gas" class="sensor">--</div>
     </div>
   </div>
 
-  <button id="allOffBtn">All OFF</button>
-  <button id="logoutBtn">Logout</button>
+  <div class="actions">
+    <button id="allOn">All ON</button>
+    <button id="allOff" class="red">All OFF</button>
+    <button id="logout" class="gray">Logout</button>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -151,61 +158,108 @@ select {
 
 <script>
 firebase.initializeApp({
-  apiKey: "AIzaSyAZ1F0MI0V_5H3_j9oQCSy16vqHjzTwNbo",
-  authDomain: "saikat-esp32.firebaseapp.com",
-  databaseURL: "https://saikat-esp32-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "saikat-esp32",
+  apiKey:"AIzaSyAZ1F0MI0V_5H3_j9oQCSy16vqHjzTwNbo",
+  authDomain:"saikat-esp32.firebaseapp.com",
+  databaseURL:"https://saikat-esp32-default-rtdb.europe-west1.firebasedatabase.app"
 });
 
-loginBtn.onclick = () => {
-  firebase.auth().signInWithEmailAndPassword(email.value,password.value)
-  .then(()=>{
-    loginForm.style.display="none";
-    dashboard.style.display="block";
-    initDashboard();
-  }).catch(e=>alert(e.message));
-};
+loginBtn.onclick=()=>firebase.auth()
+.signInWithEmailAndPassword(email.value,password.value)
+.then(()=>{loginForm.style.display="none";dashboard.style.display="block";init()})
+.catch(e=>alert(e.message));
 
-function initDashboard(){
+function init(){
   const db=firebase.database();
   const uid=firebase.auth().currentUser.uid;
-  const relays=[1,2,3,4];
+  const relayCount=4;
 
-  db.ref(`users/${uid}/devices`).on("value",snap=>{
+  db.ref(`users/${uid}/devices`).on("value",s=>{
     deviceSelect.innerHTML="";
-    snap.forEach(c=>{
-      deviceSelect.innerHTML+=`<option>${c.key}</option>`;
-    });
-    if(deviceSelect.value) loadDevice(deviceSelect.value);
+    s.forEach(d=>deviceSelect.innerHTML+=`<option>${d.key}</option>`);
+    load(deviceSelect.value);
   });
 
-  deviceSelect.onchange=()=>loadDevice(deviceSelect.value);
+  deviceSelect.onchange=()=>load(deviceSelect.value);
 
-  function loadDevice(deviceID){
-    relays.forEach(i=>{
-      const ref=db.ref(`users/${uid}/devices/${deviceID}/relay${i}`);
-      const status=document.getElementById(`status${i}`);
-      const btn=document.getElementById(`btn${i}`);
+  function load(dev){
+    relayGrid.innerHTML="";
+    for(let i=1;i<=relayCount;i++){
+      relayGrid.innerHTML+=`
+      <div class="card glass">
+        <h3>Relay ${i}</h3>
+        <span id="st${i}" class="badge off">OFF</span>
+        <button onclick="toggle('${dev}',${i})">Toggle</button>
+      </div>`;
+      db.ref(`users/${uid}/devices/${dev}/relay${i}`).on("value",v=>{
+        let st=document.getElementById(`st${i}`);
+        st.textContent=v.val()?"ON":"OFF";
+        st.className="badge "+(v.val()?"on":"off");
+      });
+    }
 
-      ref.on("value",s=>{
-        const state=s.val();
-        status.textContent=state?"ON":"OFF";
-        status.className="status-badge "+(state?"on":"off");
+    db.ref(`users/${uid}/devices/${dev}/online`)
+      .on("value",v=>{
+        onlineStatus.textContent=v.val()?"Online":"Offline";
+        onlineStatus.className="status "+(v.val()?"online":"offline");
       });
 
-      btn.onclick=()=>ref.get().then(s=>ref.set(!s.val()));
-    });
+    db.ref(`users/${uid}/devices/${dev}/temperature`)
+      .on("value",v=>temp.textContent=v.val()+" °C");
 
-    allOffBtn.onclick=()=>relays.forEach(i=>
-      db.ref(`users/${uid}/devices/${deviceID}/relay${i}`).set(false)
-    );
+    db.ref(`users/${uid}/devices/${dev}/humidity`)
+      .on("value",v=>hum.textContent=v.val()+" %");
+
+    db.ref(`users/${uid}/devices/${dev}/gasValue`)
+      .on("value",v=>gas.textContent=v.val());
+  }
+
+  window.toggle=(d,i)=>{
+    let r=db.ref(`users/${uid}/devices/${d}/relay${i}`);
+    r.get().then(s=>r.set(!s.val()));
+  };
+
+  allOn.onclick=()=>bulk(true);
+  allOff.onclick=()=>bulk(false);
+
+  function bulk(v){
+    let d=deviceSelect.value;
+    for(let i=1;i<=relayCount;i++)
+      db.ref(`users/${uid}/devices/${d}/relay${i}`).set(v);
   }
 }
 
-logoutBtn.onclick=()=>firebase.auth().signOut().then(()=>{
+logout.onclick=()=>firebase.auth().signOut().then(()=>{
   dashboard.style.display="none";
   loginForm.style.display="block";
 });
 </script>
+
+<script>
+// ===== THREE.JS BACKGROUND =====
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,1000);
+const renderer=new THREE.WebGLRenderer({canvas:bg,alpha:true});
+renderer.setSize(innerWidth,innerHeight);
+camera.position.z=5;
+
+const geo=new THREE.BufferGeometry();
+const count=2000;
+const pos=[];
+for(let i=0;i<count;i++){
+  pos.push((Math.random()-.5)*10,(Math.random()-.5)*10,(Math.random()-.5)*10);
+}
+geo.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
+const mat=new THREE.PointsMaterial({color:0x00c6ff,size:.02});
+const points=new THREE.Points(geo,mat);
+scene.add(points);
+
+function animate(){
+  requestAnimationFrame(animate);
+  points.rotation.y+=.0005;
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+
 </body>
 </html>
