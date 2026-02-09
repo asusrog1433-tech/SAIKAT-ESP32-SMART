@@ -7,31 +7,34 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
 <style>
 *{box-sizing:border-box;font-family:Poppins}
 body{
   margin:0;
-  background:#050816;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
   color:#fff;
-  overflow-x:hidden;
+  min-height:100vh;
 }
 
-canvas{position:fixed;top:0;left:0;z-index:-1}
+h1{text-align:center;margin:25px 10px;font-weight:600}
 
 .glass{
   background:rgba(255,255,255,.08);
   backdrop-filter:blur(14px);
   border-radius:18px;
-  box-shadow:0 10px 40px rgba(0,0,0,.4);
+  box-shadow:0 12px 40px rgba(0,0,0,.35);
+  animation:fadeIn .6s ease;
 }
 
-h1{text-align:center;margin-top:30px}
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(15px)}
+  to{opacity:1;transform:none}
+}
 
+/* ===== LOGIN ===== */
 #loginForm{
   max-width:380px;
-  margin:120px auto;
+  margin:100px auto;
   padding:30px;
 }
 
@@ -42,17 +45,19 @@ input,select,button{
   border-radius:12px;
   border:none;
   outline:none;
+  font-size:15px;
 }
 
 button{
-  background:#3f51b5;
-  color:white;
+  background:#00c6ff;
+  color:#000;
   font-weight:600;
   cursor:pointer;
   transition:.3s;
 }
 button:hover{transform:scale(1.05)}
 
+/* ===== DASHBOARD ===== */
 #dashboard{display:none;padding:20px}
 
 .top-bar{
@@ -60,17 +65,18 @@ button:hover{transform:scale(1.05)}
   flex-wrap:wrap;
   justify-content:center;
   gap:15px;
-  margin-bottom:20px;
+  margin-bottom:25px;
 }
 
 .status{
-  padding:8px 16px;
+  padding:8px 18px;
   border-radius:30px;
   font-weight:600;
 }
 .online{background:#00e676;color:black}
 .offline{background:#ff5252}
 
+/* ===== GRID ===== */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -78,7 +84,7 @@ button:hover{transform:scale(1.05)}
 }
 
 .card{
-  padding:18px;
+  padding:20px;
   text-align:center;
 }
 
@@ -87,50 +93,58 @@ button:hover{transform:scale(1.05)}
   padding:6px 14px;
   border-radius:20px;
   font-weight:600;
-  margin-top:8px;
+  margin:10px 0;
 }
 .on{background:#00e676;color:black}
 .off{background:#ff5252}
 
-.actions{
-  margin-top:25px;
-  display:flex;
-  gap:15px;
-  flex-wrap:wrap;
-  justify-content:center;
+.sensor{
+  font-size:22px;
+  font-weight:600;
 }
 
-.red{background:#ff1744}
-.gray{background:#607d8b}
+/* ===== ACTIONS ===== */
+.actions{
+  margin-top:30px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:15px;
+  justify-content:center;
+}
+.red{background:#ff1744;color:white}
+.gray{background:#607d8b;color:white}
 
-.sensor{
-  font-size:20px;
-  margin-top:10px;
+/* ===== MOBILE ===== */
+@media(max-width:500px){
+  h1{font-size:22px}
 }
 </style>
 </head>
 
 <body>
 
-<canvas id="bg"></canvas>
+<h1>⚡ ESP32 Smart Home</h1>
 
-<h1>⚡ ESP32 Smart Control</h1>
-
+<!-- ===== LOGIN ===== -->
 <div id="loginForm" class="glass">
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
   <button id="loginBtn">Login</button>
 </div>
 
+<!-- ===== DASHBOARD ===== -->
 <div id="dashboard">
+
   <div class="top-bar">
     <select id="deviceSelect"></select>
     <span id="onlineStatus" class="status offline">Offline</span>
   </div>
 
+  <!-- RELAYS -->
   <div id="relayGrid" class="grid"></div>
 
-  <div class="grid">
+  <!-- SENSORS -->
+  <div class="grid" style="margin-top:25px">
     <div class="card glass">
       <h3>🌡 Temperature</h3>
       <div id="temp" class="sensor">-- °C</div>
@@ -152,6 +166,7 @@ button:hover{transform:scale(1.05)}
   </div>
 </div>
 
+<!-- ===== FIREBASE ===== -->
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
@@ -163,102 +178,105 @@ firebase.initializeApp({
   databaseURL:"https://saikat-esp32-default-rtdb.europe-west1.firebasedatabase.app"
 });
 
-loginBtn.onclick=()=>firebase.auth()
-.signInWithEmailAndPassword(email.value,password.value)
-.then(()=>{loginForm.style.display="none";dashboard.style.display="block";init()})
-.catch(e=>alert(e.message));
+/* ===== LOGIN ===== */
+loginBtn.onclick = () => {
+  firebase.auth()
+    .signInWithEmailAndPassword(email.value, password.value)
+    .then(() => {
+      loginForm.style.display="none";
+      dashboard.style.display="block";
+      initDashboard();
+    })
+    .catch(e => alert(e.message));
+};
 
-function init(){
-  const db=firebase.database();
-  const uid=firebase.auth().currentUser.uid;
-  const relayCount=4;
+/* ===== DASHBOARD ===== */
+function initDashboard(){
+  const db = firebase.database();
+  const uid = firebase.auth().currentUser.uid;
+  const relayCount = 16;
 
-  db.ref(`users/${uid}/devices`).on("value",s=>{
-    deviceSelect.innerHTML="";
-    s.forEach(d=>deviceSelect.innerHTML+=`<option>${d.key}</option>`);
-    load(deviceSelect.value);
+  // Load devices
+  db.ref(`users/${uid}/devices`).on("value", snap => {
+    deviceSelect.innerHTML = "";
+    snap.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.key;
+      opt.textContent = c.key;
+      deviceSelect.appendChild(opt);
+    });
+
+    if(deviceSelect.options.length > 0){
+      deviceSelect.selectedIndex = 0;
+      loadDevice(deviceSelect.value);
+    }
   });
 
-  deviceSelect.onchange=()=>load(deviceSelect.value);
+  deviceSelect.onchange = () => loadDevice(deviceSelect.value);
 
-  function load(dev){
-    relayGrid.innerHTML="";
+  function loadDevice(deviceID){
+    relayGrid.innerHTML = "";
+
+    // RELAYS
     for(let i=1;i<=relayCount;i++){
-      relayGrid.innerHTML+=`
-      <div class="card glass">
-        <h3>Relay ${i}</h3>
-        <span id="st${i}" class="badge off">OFF</span>
-        <button onclick="toggle('${dev}',${i})">Toggle</button>
-      </div>`;
-      db.ref(`users/${uid}/devices/${dev}/relay${i}`).on("value",v=>{
-        let st=document.getElementById(`st${i}`);
-        st.textContent=v.val()?"ON":"OFF";
-        st.className="badge "+(v.val()?"on":"off");
-      });
+      relayGrid.innerHTML += `
+        <div class="card glass">
+          <h3>Relay ${i}</h3>
+          <span id="st${i}" class="badge off">OFF</span>
+          <button onclick="toggleRelay('${deviceID}',${i})">Toggle</button>
+        </div>
+      `;
+
+      db.ref(`users/${uid}/devices/${deviceID}/relay${i}`)
+        .on("value", s => {
+          const st = document.getElementById(`st${i}`);
+          if(!st) return;
+          st.textContent = s.val() ? "ON" : "OFF";
+          st.className = "badge " + (s.val() ? "on" : "off");
+        });
     }
 
-    db.ref(`users/${uid}/devices/${dev}/online`)
-      .on("value",v=>{
-        onlineStatus.textContent=v.val()?"Online":"Offline";
-        onlineStatus.className="status "+(v.val()?"online":"offline");
+    // STATUS
+    db.ref(`users/${uid}/devices/${deviceID}/online`)
+      .on("value", v => {
+        onlineStatus.textContent = v.val() ? "Online" : "Offline";
+        onlineStatus.className = "status " + (v.val()?"online":"offline");
       });
 
-    db.ref(`users/${uid}/devices/${dev}/temperature`)
-      .on("value",v=>temp.textContent=v.val()+" °C");
+    // SENSORS
+    db.ref(`users/${uid}/devices/${deviceID}/temperature`)
+      .on("value", v => temp.textContent = (v.val() ?? "--") + " °C");
 
-    db.ref(`users/${uid}/devices/${dev}/humidity`)
-      .on("value",v=>hum.textContent=v.val()+" %");
+    db.ref(`users/${uid}/devices/${deviceID}/humidity`)
+      .on("value", v => hum.textContent = (v.val() ?? "--") + " %");
 
-    db.ref(`users/${uid}/devices/${dev}/gasValue`)
-      .on("value",v=>gas.textContent=v.val());
+    db.ref(`users/${uid}/devices/${deviceID}/gasValue`)
+      .on("value", v => gas.textContent = v.val() ?? "--");
   }
 
-  window.toggle=(d,i)=>{
-    let r=db.ref(`users/${uid}/devices/${d}/relay${i}`);
-    r.get().then(s=>r.set(!s.val()));
+  window.toggleRelay = (deviceID, relay) => {
+    const ref = db.ref(`users/${uid}/devices/${deviceID}/relay${relay}`);
+    ref.get().then(s => ref.set(!s.val()));
   };
 
-  allOn.onclick=()=>bulk(true);
-  allOff.onclick=()=>bulk(false);
+  allOn.onclick = () => bulk(true);
+  allOff.onclick = () => bulk(false);
 
-  function bulk(v){
-    let d=deviceSelect.value;
-    for(let i=1;i<=relayCount;i++)
-      db.ref(`users/${uid}/devices/${d}/relay${i}`).set(v);
+  function bulk(val){
+    const d = deviceSelect.value;
+    for(let i=1;i<=relayCount;i++){
+      db.ref(`users/${uid}/devices/${d}/relay${i}`).set(val);
+    }
   }
 }
 
-logout.onclick=()=>firebase.auth().signOut().then(()=>{
-  dashboard.style.display="none";
-  loginForm.style.display="block";
-});
-</script>
-
-<script>
-// ===== THREE.JS BACKGROUND =====
-const scene=new THREE.Scene();
-const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,1000);
-const renderer=new THREE.WebGLRenderer({canvas:bg,alpha:true});
-renderer.setSize(innerWidth,innerHeight);
-camera.position.z=5;
-
-const geo=new THREE.BufferGeometry();
-const count=2000;
-const pos=[];
-for(let i=0;i<count;i++){
-  pos.push((Math.random()-.5)*10,(Math.random()-.5)*10,(Math.random()-.5)*10);
-}
-geo.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));
-const mat=new THREE.PointsMaterial({color:0x00c6ff,size:.02});
-const points=new THREE.Points(geo,mat);
-scene.add(points);
-
-function animate(){
-  requestAnimationFrame(animate);
-  points.rotation.y+=.0005;
-  renderer.render(scene,camera);
-}
-animate();
+/* ===== LOGOUT ===== */
+logout.onclick = () => {
+  firebase.auth().signOut().then(() => {
+    dashboard.style.display="none";
+    loginForm.style.display="block";
+  });
+};
 </script>
 
 </body>
