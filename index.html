@@ -194,7 +194,7 @@ loginBtn.onclick = () => {
 function initDashboard(){
   const db = firebase.database();
   const uid = firebase.auth().currentUser.uid;
-  const relayCount = 16;
+  const relayCount = 8;
 
   // Load devices
   db.ref(`users/${uid}/devices`).on("value", snap => {
