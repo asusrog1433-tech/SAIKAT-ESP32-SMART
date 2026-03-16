@@ -1,283 +1,1073 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>ESP32 Smart Home</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>WipLinx</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #04060d;
+      --panel: #080d1a;
+      --panel2: #0c1220;
+      --border: rgba(0, 255, 180, 0.15);
+      --neon: #00ffb4;
+      --neon2: #ff3cac;
+      --neon3: #ffde03;
+      --text: #d0ffe8;
+      --muted: #4a7a6a;
+      --glow-g: rgba(0, 255, 180, 0.25);
+      --glow-p: rgba(255, 60, 172, 0.25);
+    }
 
-<style>
-*{box-sizing:border-box;font-family:Poppins}
-body{
-  margin:0;
-  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-  color:#fff;
-  min-height:100vh;
-}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-h1{text-align:center;margin:25px 10px;font-weight:600}
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
 
-.glass{
-  background:rgba(255,255,255,.08);
-  backdrop-filter:blur(14px);
-  border-radius:18px;
-  box-shadow:0 12px 40px rgba(0,0,0,.35);
-  animation:fadeIn .6s ease;
-}
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 180, 0.015) 2px, rgba(0, 255, 180, 0.015) 4px);
+      pointer-events: none;
+      z-index: 999;
+    }
 
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(15px)}
-  to{opacity:1;transform:none}
-}
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0, 255, 180, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 180, 0.04) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
 
-/* ===== LOGIN ===== */
-#loginForm{
-  max-width:380px;
-  margin:100px auto;
-  padding:30px;
-}
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-input,select,button{
-  width:100%;
-  padding:12px;
-  margin:10px 0;
-  border-radius:12px;
-  border:none;
-  outline:none;
-  font-size:15px;
-}
+    .blob-1 {
+      width: 450px;
+      height: 450px;
+      top: -160px;
+      left: -160px;
+      background: rgba(0, 255, 180, 0.06);
+    }
 
-button{
-  background:#00c6ff;
-  color:#000;
-  font-weight:600;
-  cursor:pointer;
-  transition:.3s;
-}
-button:hover{transform:scale(1.05)}
+    .blob-2 {
+      width: 400px;
+      height: 400px;
+      bottom: -120px;
+      right: -120px;
+      background: rgba(255, 60, 172, 0.07);
+    }
 
-/* ===== DASHBOARD ===== */
-#dashboard{display:none;padding:20px}
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(22px);
+      }
 
-.top-bar{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:15px;
-  margin-bottom:25px;
-}
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
 
-.status{
-  padding:8px 18px;
-  border-radius:30px;
-  font-weight:600;
-}
-.online{background:#00e676;color:black}
-.offline{background:#ff5252}
+    @keyframes flicker {
 
-/* ===== GRID ===== */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:18px;
-}
+      0%,
+      100% {
+        opacity: 1
+      }
 
-.card{
-  padding:20px;
-  text-align:center;
-}
+      92% {
+        opacity: 1
+      }
 
-.badge{
-  display:inline-block;
-  padding:6px 14px;
-  border-radius:20px;
-  font-weight:600;
-  margin:10px 0;
-}
-.on{background:#00e676;color:black}
-.off{background:#ff5252}
+      93% {
+        opacity: .55
+      }
 
-.sensor{
-  font-size:22px;
-  font-weight:600;
-}
+      94% {
+        opacity: 1
+      }
 
-/* ===== ACTIONS ===== */
-.actions{
-  margin-top:30px;
-  display:flex;
-  flex-wrap:wrap;
-  gap:15px;
-  justify-content:center;
-}
-.red{background:#ff1744;color:white}
-.gray{background:#607d8b;color:white}
+      96% {
+        opacity: .7
+      }
 
-/* ===== MOBILE ===== */
-@media(max-width:500px){
-  h1{font-size:22px}
-}
-</style>
+      97% {
+        opacity: 1
+      }
+    }
+
+    @keyframes pulse-glow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 6px rgba(0, 255, 180, 0.15)
+      }
+
+      50% {
+        box-shadow: 0 0 22px rgba(0, 255, 180, 0.35)
+      }
+    }
+
+    @keyframes blink-dot {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .15
+      }
+    }
+
+    @keyframes sweep {
+      from {
+        width: 0
+      }
+
+      to {
+        width: 100%
+      }
+    }
+
+    /* ── LOGIN ── */
+    #loginWrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      animation: fadeSlide .6s ease;
+    }
+
+    .login-logo {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2.4rem, 6vw, 4rem);
+      font-weight: 900;
+      color: var(--neon);
+      text-shadow: 0 0 22px var(--neon), 0 0 60px rgba(0, 255, 180, 0.35);
+      letter-spacing: 8px;
+      animation: flicker 7s infinite;
+      margin-bottom: 6px;
+    }
+
+    .login-sub {
+      font-size: 11px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 50px;
+    }
+
+    .login-box {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 36px 30px;
+      clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
+    }
+
+    .login-box::before,
+    .login-box::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-color: var(--neon);
+      border-style: solid;
+    }
+
+    .login-box::before {
+      top: -1px;
+      left: -1px;
+      border-width: 2px 0 0 2px;
+    }
+
+    .login-box::after {
+      bottom: -1px;
+      right: -1px;
+      border-width: 0 2px 2px 0;
+    }
+
+    .field-row {
+      margin-bottom: 20px;
+    }
+
+    .field-lbl {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--neon);
+      margin-bottom: 7px;
+      font-family: 'Orbitron', monospace;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(0, 255, 180, 0.04);
+      border: 1px solid rgba(0, 255, 180, 0.2);
+      border-radius: 2px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      letter-spacing: 1px;
+    }
+
+    input:focus {
+      border-color: var(--neon);
+      box-shadow: 0 0 14px rgba(0, 255, 180, 0.2), inset 0 0 8px rgba(0, 255, 180, 0.04);
+    }
+
+    input::placeholder {
+      color: var(--muted);
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 11px 22px;
+      border: none;
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: crosshair;
+      border-radius: 2px;
+      transition: transform .18s cubic-bezier(.34, 1.56, .64, 1), box-shadow .2s, background .2s, color .2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0);
+      transition: background .18s;
+    }
+
+    .btn:hover::after {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .btn:hover {
+      transform: translateY(-3px) scale(1.05);
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(.97);
+    }
+
+    .btn-neon {
+      background: transparent;
+      color: var(--neon);
+      border: 1px solid var(--neon);
+      box-shadow: 0 0 12px rgba(0, 255, 180, 0.2), inset 0 0 10px rgba(0, 255, 180, 0.04);
+      width: 100%;
+    }
+
+    .btn-neon:hover {
+      background: rgba(0, 255, 180, 0.1);
+      box-shadow: 0 0 28px rgba(0, 255, 180, 0.45), inset 0 0 16px rgba(0, 255, 180, 0.08);
+      color: #fff;
+    }
+
+    .btn-pink {
+      background: transparent;
+      color: var(--neon2);
+      border: 1px solid var(--neon2);
+      box-shadow: 0 0 10px rgba(255, 60, 172, 0.15);
+    }
+
+    .btn-pink:hover {
+      background: rgba(255, 60, 172, 0.1);
+      box-shadow: 0 0 26px rgba(255, 60, 172, 0.4);
+      color: #fff;
+    }
+
+    .btn-dim {
+      background: var(--panel2);
+      color: var(--muted);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-dim:hover {
+      background: #111b2d;
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-neon-sm {
+      background: transparent;
+      color: var(--neon);
+      border: 1px solid rgba(0, 255, 180, 0.35);
+      padding: 8px 16px;
+      font-size: 10px;
+    }
+
+    .btn-neon-sm:hover {
+      background: rgba(0, 255, 180, 0.1);
+      box-shadow: 0 0 16px rgba(0, 255, 180, 0.3);
+      color: #fff;
+    }
+
+    .btn-pink-sm {
+      background: transparent;
+      color: var(--neon2);
+      border: 1px solid rgba(255, 60, 172, 0.35);
+      padding: 8px 16px;
+      font-size: 10px;
+    }
+
+    .btn-pink-sm:hover {
+      background: rgba(255, 60, 172, 0.1);
+      box-shadow: 0 0 16px rgba(255, 60, 172, 0.3);
+      color: #fff;
+    }
+
+    #loginError {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--neon2);
+      text-align: center;
+      letter-spacing: 1px;
+      min-height: 18px;
+    }
+
+    /* ── DASHBOARD ── */
+    #dashboard {
+      display: none;
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      animation: fadeSlide .5s ease;
+    }
+
+    .hud-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .hud-logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--neon);
+      letter-spacing: 5px;
+      text-shadow: 0 0 16px rgba(0, 255, 180, 0.5);
+      animation: flicker 9s infinite;
+    }
+
+    .hud-center {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    select {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 2px;
+      outline: none;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+
+    select:hover,
+    select:focus {
+      border-color: var(--neon);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 14px;
+      border-radius: 2px;
+      font-family: 'Orbitron', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .status-on {
+      border: 1px solid var(--neon);
+      color: var(--neon);
+      background: rgba(0, 255, 180, 0.06);
+    }
+
+    .status-off {
+      border: 1px solid var(--neon2);
+      color: var(--neon2);
+      background: rgba(255, 60, 172, 0.06);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .status-on .status-dot {
+      background: var(--neon);
+      animation: blink-dot 1.4s infinite;
+      box-shadow: 0 0 8px var(--neon);
+    }
+
+    .status-off .status-dot {
+      background: var(--neon2);
+    }
+
+    .hud-right {
+      display: flex;
+      gap: 8px;
+    }
+
+    .content {
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Sensors */
+    .sensor-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .sensor-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 22px 22px 18px;
+      position: relative;
+      overflow: hidden;
+      clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+      transition: border-color .25s, transform .2s;
+    }
+
+    .sensor-card:hover {
+      border-color: var(--neon);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(0, 255, 180, 0.1);
+    }
+
+    .sensor-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      width: 0;
+      background: linear-gradient(90deg, var(--neon), transparent);
+      transition: width .4s ease;
+    }
+
+    .sensor-card:hover::after {
+      width: 100%;
+    }
+
+    .s-label {
+      font-size: 9px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      margin-bottom: 10px;
+    }
+
+    .s-val {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.5rem, 2.5vw, 2.1rem);
+      font-weight: 700;
+      color: var(--neon);
+      text-shadow: 0 0 16px rgba(0, 255, 180, 0.4);
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+
+    .s-icon {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      font-size: 38px;
+      opacity: .1;
+    }
+
+    /* Section header */
+    .sec-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .sec-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--neon);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sec-title::before {
+      content: '';
+      display: inline-block;
+      width: 28px;
+      height: 1px;
+      background: var(--neon);
+      box-shadow: 0 0 8px var(--neon);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Relay grid */
+    .relay-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 14px;
+    }
+
+    .relay-card {
+      background: var(--panel);
+      border-radius: 2px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+      transition: border-color .25s, transform .2s, box-shadow .25s;
+      border: 1px solid rgba(0, 255, 180, 0.1);
+    }
+
+    .relay-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .relay-card.is-on {
+      border-color: rgba(0, 255, 180, 0.4);
+      animation: pulse-glow 2.5s infinite;
+    }
+
+    .relay-card.is-off {
+      border-color: rgba(255, 60, 172, 0.18);
+    }
+
+    .relay-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 0 12px 12px 0;
+    }
+
+    .relay-card.is-on::before {
+      border-color: transparent rgba(0, 255, 180, 0.4) transparent transparent;
+    }
+
+    .relay-card.is-off::before {
+      border-color: transparent rgba(255, 60, 172, 0.35) transparent transparent;
+    }
+
+    .relay-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .relay-id {
+      font-family: 'Orbitron', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    .relay-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+
+    .relay-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge {
+      font-family: 'Orbitron', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 3px 10px;
+      border-radius: 1px;
+    }
+
+    .badge-on {
+      color: var(--neon);
+      border: 1px solid rgba(0, 255, 180, 0.4);
+      background: rgba(0, 255, 180, 0.08);
+    }
+
+    .badge-off {
+      color: var(--neon2);
+      border: 1px solid rgba(255, 60, 172, 0.35);
+      background: rgba(255, 60, 172, 0.06);
+    }
+
+    /* Toggle */
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 22px;
+      cursor: crosshair;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      display: none;
+    }
+
+    .toggle-bg {
+      position: absolute;
+      inset: 0;
+      border-radius: 1px;
+      background: rgba(255, 60, 172, 0.12);
+      border: 1px solid rgba(255, 60, 172, 0.3);
+      transition: background .25s, border-color .25s;
+    }
+
+    .toggle input:checked~.toggle-bg {
+      background: rgba(0, 255, 180, 0.12);
+      border-color: rgba(0, 255, 180, 0.4);
+      box-shadow: 0 0 12px rgba(0, 255, 180, 0.25);
+    }
+
+    .toggle-knob {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 1px;
+      background: var(--neon2);
+      transition: transform .25s cubic-bezier(.34, 1.56, .64, 1), background .25s;
+      box-shadow: 0 0 8px rgba(255, 60, 172, 0.5);
+    }
+
+    .toggle input:checked~.toggle-knob {
+      transform: translateX(22px);
+      background: var(--neon);
+      box-shadow: 0 0 12px rgba(0, 255, 180, 0.7);
+    }
+
+    @media (max-width:600px) {
+      .sensor-row {
+        grid-template-columns: 1fr;
+      }
+
+      .hud-bar {
+        padding: 12px 16px;
+      }
+
+      .content {
+        padding: 14px;
+      }
+    }
+
+    #toastBox {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      background: #0c1220;
+      border: 1px solid #00ffb4;
+      color: #00ffb4;
+      padding: 12px 18px;
+      font-family: Orbitron;
+      letter-spacing: 1px;
+      box-shadow: 0 0 15px rgba(0, 255, 180, .4);
+      animation: toastIn .3s ease;
+    }
+
+    .toast.danger {
+      border-color: #ff3cac;
+      color: #ff3cac;
+      box-shadow: 0 0 15px rgba(255, 60, 172, .4);
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateX(40px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+  </style>
 </head>
+<div id="toastBox"></div>
 
 <body>
 
-<h1>⚡ ESP32 Smart Home</h1>
+  <div class="bg-grid"></div>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
 
-<!-- ===== LOGIN ===== -->
-<div id="loginForm" class="glass">
-  <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
-  <button id="loginBtn">Login</button>
-</div>
-
-<!-- ===== DASHBOARD ===== -->
-<div id="dashboard">
-
-  <div class="top-bar">
-    <select id="deviceSelect"></select>
-    <span id="onlineStatus" class="status offline">Offline</span>
-  </div>
-
-  <!-- RELAYS -->
-  <div id="relayGrid" class="grid"></div>
-
-  <!-- SENSORS -->
-  <div class="grid" style="margin-top:25px">
-    <div class="card glass">
-      <h3>🌡 Temperature</h3>
-      <div id="temp" class="sensor">-- °C</div>
-    </div>
-    <div class="card glass">
-      <h3>💧 Humidity</h3>
-      <div id="hum" class="sensor">-- %</div>
-    </div>
-    <div class="card glass">
-      <h3>🔥 Gas</h3>
-      <div id="gas" class="sensor">--</div>
+  <!-- LOGIN -->
+  <div id="loginWrap">
+    <div class="login-logo">WIPLINX</div>
+    <div class="login-sub">Smart Home Control System</div>
+    <div class="login-box">
+      <div class="field-row">
+        <label class="field-lbl">// User ID</label>
+        <input id="email" type="email" placeholder="operator@node.io" autocomplete="email">
+      </div>
+      <div class="field-row">
+        <label class="field-lbl">// Auth Key</label>
+        <input id="password" type="password" placeholder="••••••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-neon" id="loginBtn">[ INITIALIZE ]</button>
+      <div id="loginError"></div>
     </div>
   </div>
 
-  <div class="actions">
-    <button id="allOn">All ON</button>
-    <button id="allOff" class="red">All OFF</button>
-    <button id="logout" class="gray">Logout</button>
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <div class="hud-bar">
+      <div class="hud-logo">WIPLINX</div>
+      
+      <div class="hud-right">
+        <div class="hud-center">
+        <span id="onlineStatus" class="status-pill status-off">
+          <span class="status-dot"></span>OFFLINE
+        </span>
+        <select id="deviceSelect"></select>
+      </div>
+        <button class="btn btn-dim" id="logout">[ EXIT ]</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="sensor-row">
+        <div class="sensor-card">
+          <div class="s-icon">🌡</div>
+          <div class="s-label">// Temperature</div>
+          <div class="s-val" id="temp">-- °C</div>
+        </div>
+        <div class="sensor-card">
+          <div class="s-icon">💧</div>
+          <div class="s-label">// Humidity</div>
+          <div class="s-val" id="hum">-- %</div>
+        </div>
+        <div class="sensor-card">
+          <div class="s-icon">🔥</div>
+          <div class="s-label">// Gas Level</div>
+          <div class="s-val" id="gas">--</div>
+        </div>
+      </div>
+
+      <div class="sec-head">
+        <div class="sec-title">Relay Matrix</div>
+        <div class="btn-row">
+          <button class="btn btn-neon-sm" id="allOn">▲ ALL ON</button>
+          <button class="btn btn-pink-sm" id="allOff">▼ ALL OFF</button>
+        </div>
+      </div>
+      <div id="relayGrid" class="relay-grid"></div>
+    </div>
   </div>
-</div>
 
-<!-- ===== FIREBASE ===== -->
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-
-<script>
-firebase.initializeApp({
-  apiKey:"AIzaSyAZ1F0MI0V_5H3_j9oQCSy16vqHjzTwNbo",
-  authDomain:"saikat-esp32.firebaseapp.com",
-  databaseURL:"https://saikat-esp32-default-rtdb.europe-west1.firebasedatabase.app"
-});
-
-/* ===== LOGIN ===== */
-loginBtn.onclick = () => {
-  firebase.auth()
-    .signInWithEmailAndPassword(email.value, password.value)
-    .then(() => {
-      loginForm.style.display="none";
-      dashboard.style.display="block";
-      initDashboard();
-    })
-    .catch(e => alert(e.message));
-};
-
-/* ===== DASHBOARD ===== */
-function initDashboard(){
-  const db = firebase.database();
-  const uid = firebase.auth().currentUser.uid;
-  const relayCount = 8;
-
-  // Load devices
-  db.ref(`users/${uid}/devices`).on("value", snap => {
-    deviceSelect.innerHTML = "";
-    snap.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.key;
-      opt.textContent = c.key;
-      deviceSelect.appendChild(opt);
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyAZ1F0MI0V_5H3_j9oQCSy16vqHjzTwNbo",
+      authDomain: "saikat-esp32.firebaseapp.com",
+      databaseURL: "https://saikat-esp32-default-rtdb.europe-west1.firebasedatabase.app"
     });
 
-    if(deviceSelect.options.length > 0){
-      deviceSelect.selectedIndex = 0;
-      loadDevice(deviceSelect.value);
-    }
-  });
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-  deviceSelect.onchange = () => loadDevice(deviceSelect.value);
+    document.getElementById('loginBtn').onclick = () => {
+      const e = document.getElementById('email').value;
+      const p = document.getElementById('password').value;
+      document.getElementById('loginError').textContent = '';
+      firebase.auth().signInWithEmailAndPassword(e, p)
+        .catch(err => { document.getElementById('loginError').textContent = '⚠ ' + err.message; });
+    };
 
-  function loadDevice(deviceID){
-    relayGrid.innerHTML = "";
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        document.getElementById('loginWrap').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        initDashboard();
+      } else {
+        document.getElementById('loginWrap').style.display = 'flex';
+        document.getElementById('dashboard').style.display = 'none';
+      }
+    });
 
-    // RELAYS
-    for(let i=1;i<=relayCount;i++){
-      relayGrid.innerHTML += `
-        <div class="card glass">
-          <h3>Relay ${i}</h3>
-          <span id="st${i}" class="badge off">OFF</span>
-          <button onclick="toggleRelay('${deviceID}',${i})">Toggle</button>
-        </div>
-      `;
+    function initDashboard() {
+      const db = firebase.database();
+      const uid = firebase.auth().currentUser.uid;
+      const relayCount = 8;
+      let listeners = [];
 
-      db.ref(`users/${uid}/devices/${deviceID}/relay${i}`)
-        .on("value", s => {
-          const st = document.getElementById(`st${i}`);
-          if(!st) return;
-          st.textContent = s.val() ? "ON" : "OFF";
-          st.className = "badge " + (s.val() ? "on" : "off");
+      function detach() { listeners.forEach(({ ref, fn }) => ref.off('value', fn)); listeners = []; }
+      function listen(ref, fn) { ref.on('value', fn); listeners.push({ ref, fn }); }
+
+      db.ref(`users/${uid}/devices`).on('value', snap => {
+        const old = document.getElementById('deviceSelect').value;
+        const sel = document.getElementById('deviceSelect');
+        sel.innerHTML = '';
+        snap.forEach(c => {
+          const o = document.createElement('option');
+          o.value = o.textContent = c.key;
+          sel.appendChild(o);
         });
-    }
-
-    // STATUS
-    db.ref(`users/${uid}/devices/${deviceID}/online`)
-      .on("value", v => {
-        onlineStatus.textContent = v.val() ? "Online" : "Offline";
-        onlineStatus.className = "status " + (v.val()?"online":"offline");
+        if (old && [...sel.options].some(o => o.value === old)) sel.value = old;
+        else sel.selectedIndex = 0;
+        loadDevice(sel.value);
       });
 
-    // SENSORS
-    db.ref(`users/${uid}/devices/${deviceID}/temperature`)
-      .on("value", v => temp.textContent = (v.val() ?? "--") + " °C");
+      document.getElementById('deviceSelect').onchange = function () {
+        detach(); loadDevice(this.value);
+      };
 
-    db.ref(`users/${uid}/devices/${deviceID}/humidity`)
-      .on("value", v => hum.textContent = (v.val() ?? "--") + " %");
+      function loadDevice(id) {
+        detach();
+        const grid = document.getElementById('relayGrid');
+        grid.innerHTML = '';
 
-    db.ref(`users/${uid}/devices/${deviceID}/gasValue`)
-      .on("value", v => gas.textContent = v.val() ?? "--");
-  }
+        for (let i = 1; i <= relayCount; i++) {
+          const card = document.createElement('div');
+          card.className = 'relay-card is-off';
+          card.id = `rc${i}`;
+          card.innerHTML = `
+        <div class="relay-head">
+          <span class="relay-id">R${String(i).padStart(2, '0')}</span>
+        </div>
+        <div class="relay-name">RELAY ${i}</div>
+        <div class="relay-footer">
+          <span id="st${i}" class="badge badge-off">OFF</span>
+          <label class="toggle">
+            <input type="checkbox" id="chk${i}">
+            <span class="toggle-bg"></span>
+            <span class="toggle-knob"></span>
+          </label>
+        </div>`;
+          grid.appendChild(card);
 
-  window.toggleRelay = (deviceID, relay) => {
-    const ref = db.ref(`users/${uid}/devices/${deviceID}/relay${relay}`);
-    ref.get().then(s => ref.set(!s.val()));
-  };
+          document.getElementById(`chk${i}`).addEventListener('change', function () {
+            db.ref(`users/${uid}/devices/${id}/relay${i}`).set(this.checked);
+          });
 
-  allOn.onclick = () => bulk(true);
-  allOff.onclick = () => bulk(false);
+          listen(db.ref(`users/${uid}/devices/${id}/relay${i}`), s => {
+            const on = !!s.val();
+            const st = document.getElementById(`st${i}`);
+            const chk = document.getElementById(`chk${i}`);
+            const cd = document.getElementById(`rc${i}`);
+            if (!st) return;
+            st.textContent = on ? 'ON' : 'OFF';
+            st.className = 'badge ' + (on ? 'badge-on' : 'badge-off');
+            if (chk) chk.checked = on;
+            if (cd) { cd.classList.toggle('is-on', on); cd.classList.toggle('is-off', !on); }
+          });
+        }
 
-  function bulk(val){
-    const d = deviceSelect.value;
-    for(let i=1;i<=relayCount;i++){
-      db.ref(`users/${uid}/devices/${d}/relay${i}`).set(val);
+        listen(db.ref(`users/${uid}/devices/${id}/online`), v => {
+          const el = document.getElementById('onlineStatus');
+          const on = !!v.val();
+          el.innerHTML = `<span class="status-dot"></span>${on ? 'ONLINE' : 'OFFLINE'}`;
+          el.className = 'status-pill ' + (on ? 'status-on' : 'status-off');
+        });
+
+        let lastAlert = 0;
+
+        function showToast(msg, danger = false) {
+
+          const now = Date.now();
+
+          if (now - lastAlert < 4000) return;
+
+          lastAlert = now;
+
+          const box = document.getElementById("toastBox");
+
+          const t = document.createElement("div");
+
+          t.className = "toast" + (danger ? " danger" : "");
+
+          t.textContent = msg;
+
+          box.appendChild(t);
+
+
+          // sound
+          const audio = new Audio(
+            "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg"
+          );
+
+          audio.play();
+
+
+          // glow
+          document.body.style.boxShadow =
+            "0 0 40px red inset";
+
+          setTimeout(() => {
+            document.body.style.boxShadow = "";
+          }, 1500);
+
+
+          // remove toast
+          setTimeout(() => {
+            t.remove();
+          }, 3000);
+
+        }
+
+        // TEMPERATURE
+        listen(
+          db.ref(`users/${uid}/devices/${id}/temperature`),
+          v => {
+            const val = v.val();
+            document.getElementById('temp').textContent = (val ?? '--') + ' °C';
+
+            if (val >= 37) {
+              showToast("HIGH TEMPERATURE", true);
+            }
+          }
+        );
+
+
+        // HUMIDITY
+        listen(
+          db.ref(`users/${uid}/devices/${id}/humidity`),
+          v => {
+            const val = v.val();
+            document.getElementById('hum').textContent = (val ?? '--') + ' %';
+
+            if (val >= 80) {
+              showToast("HIGH HUMIDITY", true);
+            }
+          }
+        );
+
+
+        // GAS
+        listen(
+          db.ref(`users/${uid}/devices/${id}/gasValue`),
+          v => {
+            const val = v.val();
+            document.getElementById('gas').textContent = val ?? '--';
+
+            if (val >= 800) {
+              showToast("GAS DANGER", true);
+            }
+          }
+        );
+      }
+
+      document.getElementById('allOn').onclick = () => bulk(true);
+      document.getElementById('allOff').onclick = () => bulk(false);
+
+      function bulk(val) {
+        const d = document.getElementById('deviceSelect').value;
+        for (let i = 1; i <= relayCount; i++)
+          db.ref(`users/${uid}/devices/${d}/relay${i}`).set(val);
+      }
     }
-  }
-}
 
-/* ===== LOGOUT ===== */
-logout.onclick = () => {
-  firebase.auth().signOut().then(() => {
-    dashboard.style.display="none";
-    loginForm.style.display="block";
-  });
-};
-</script>
-
+    document.getElementById('logout').onclick = () => firebase.auth().signOut();
+  </script>
 </body>
+
 </html>
